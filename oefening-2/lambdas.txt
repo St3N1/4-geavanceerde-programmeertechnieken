@@ -1,0 +1,34 @@
+package be.uantwerpen.fti.ei;
+
+@FunctionalInterface
+interface StringFunction {
+    String doIt(String s);
+}
+
+@FunctionalInterface
+interface EvaluateInterface {
+    double evaluate(double g1, double g2);
+}
+
+public class Main {
+
+    static void drukString(String s, StringFunction formatteer) {
+        System.out.println(formatteer.doIt(s));
+    }
+
+    static double calculate(double d1, double d2, EvaluateInterface evaluator) {
+        return evaluator.evaluate(d1, d2);
+    }
+
+    public static void main(String[] args) {
+        StringFunction uitroep = s -> s + "!!!";
+        StringFunction vraag = (s) -> { return s + "???"; };
+        drukString("Dit is een uitroep", uitroep);
+        drukString("Is dit een vraag", vraag);
+
+        EvaluateInterface sum = ( g1, g2 ) -> g1 + g2;
+        EvaluateInterface product = ( double g1, double g2 ) -> { return g1 * g2; };
+        System.out.println("sum:" + calculate(5.0, 6.2, sum));
+        System.out.println("product: " + calculate(2.0, 4.4, product));
+    }
+}
