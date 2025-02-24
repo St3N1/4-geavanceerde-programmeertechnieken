@@ -16,7 +16,7 @@ public class Student extends Persoon {
         this.klas = klas;
     }
 
-    public void setPunten(double punten) {
+    public void setPunt(double punten) {
         this.punten = punten;
     }
 

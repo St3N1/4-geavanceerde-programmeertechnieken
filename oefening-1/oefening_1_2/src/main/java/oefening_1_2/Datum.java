@@ -2,7 +2,7 @@ package oefening_1_2;
 
 import java.time.LocalDate;
 
-public class Datum implements Comparable {
+public class Datum implements Comparable<Datum> {
     private int dag;
     private int maand;
     private int jaar;
@@ -120,6 +120,7 @@ public class Datum implements Comparable {
         this.dag++;
     }
 
+    @Override
     public int compareTo(Datum d) {
         if (d.getJaar() == this.jaar && d.getMaand() == this.maand && d.getDag() == this.dag) {
             return -1;
