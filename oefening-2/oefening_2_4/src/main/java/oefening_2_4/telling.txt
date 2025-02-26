@@ -1,0 +1,10 @@
+koolmees 25
+vink 38
+huismus 33
+koolmees 45
+huismus 36
+kauw 30
+huismus 30
+kauw 50
+vink 35
+koolmees 30

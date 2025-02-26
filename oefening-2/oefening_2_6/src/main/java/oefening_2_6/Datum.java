@@ -1,4 +1,4 @@
-package oefening_1_2;
+package oefening_2_6;
 
 import java.time.LocalDate;
 

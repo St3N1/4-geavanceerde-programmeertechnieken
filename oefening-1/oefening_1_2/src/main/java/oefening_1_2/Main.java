@@ -19,7 +19,7 @@ public class Main {
 
         for (int i = 0; i < datums.size() - 1; i++) {
             for (int j = 0; j < datums.size() - 1 - i; j++) {
-                if (datums.get(j).compareTo(datums.get(j + 1)) > 0) {
+                if (datums.get(j).compareTo(datums.get(j + 1)) < 0) {
                     Datum temp = datums.get(j);
                     datums.set(j, datums.get(j + 1));
                     datums.set(j + 1, temp);
