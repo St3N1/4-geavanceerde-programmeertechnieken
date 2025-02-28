@@ -1,4 +1,4 @@
-package oefening_3_1;
+package oefening_3_1_newclass;
 
 public class NewClass extends OldClass {
     @Override

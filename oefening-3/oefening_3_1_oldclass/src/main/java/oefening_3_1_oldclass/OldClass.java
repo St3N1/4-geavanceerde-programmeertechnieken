@@ -1,4 +1,4 @@
-package oefening_3_1;
+package oefening_3_1_oldclass;
 
 public class OldClass {
     public void print() {
