@@ -1,4 +1,6 @@
 {
   "java.debug.settings.onBuildFailureProceed": true,
-  "maven.view": "flat"
+  "maven.view": "flat",
+  "Lua.diagnostics.disable": ["lowercase-global"],
+  "java.configuration.updateBuildConfiguration": "interactive"
 }
