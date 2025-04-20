@@ -12,7 +12,7 @@ public class DemoFibonacci {
 
 		// Load the file and run it, this will define our function
 		globals.get("dofile").call(LuaValue.valueOf(
-				"C:\\Users\\stenh\\Desktop\\School\\2024-2025\\semester-2\\4-geavanceerde-programmeertechnieken\\oefening-3\\oefening_3_2\\src\\main\\resources\\fib.lua"));
+				"oefening-3\\oefening_3_2\\src\\main\\resources\\fib.lua"));
 
 		// Get the function and prepare the argument
 		LuaValue fibfunc = globals.get("fib");
