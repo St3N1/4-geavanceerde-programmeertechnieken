@@ -8,5 +8,6 @@
   "[java]": {
     "editor.insertSpaces": false,
     "editor.detectIndentation": true
-  }
+  },
+  "Lua.diagnostics.globals": ["luajava"]
 }

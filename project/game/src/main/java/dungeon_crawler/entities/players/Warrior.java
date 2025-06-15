@@ -9,10 +9,14 @@ import dungeon_crawler.components.RenderComponent;
 import dungeon_crawler.components.VelocityComponent;
 
 public class Warrior extends PlayerEntity {
-    private int health = 10;
-    private int attackSpeed = 4;
-    private int damage = 4;
+    // stats
+    private int health = 20;
+    private int damage = 1;
+    private int attackSpeed = 700;
     private int velocity = 70;
+    private int slashColor = 4;
+
+    // sprites
     private String sprite = "/sprites/entities/warrior.png";
     private int spriteX = 32;
     private int spriteY = 2664;
@@ -21,6 +25,7 @@ public class Warrior extends PlayerEntity {
     private int scale = 2;
 
     public Warrior() {
+        this._slashColor = slashColor;
         this.addComponent(new RenderComponent(sprite, spriteX, spriteY, spriteW, spriteH, 2));
         this.addComponent(new HealthComponent(health));
         this.addComponent(new AttackComponent(damage, attackSpeed));

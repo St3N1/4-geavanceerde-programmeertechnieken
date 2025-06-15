@@ -4,5 +4,6 @@ public enum EntityFactoryType {
     PLAYER,
     ENEMY,
     PROJECTILE,
-    ITEM
+    OBJECT,
+    ATTACK,
 }

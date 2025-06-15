@@ -2,5 +2,5 @@
   "screenWidth": 800,
   "screenHeight": 800,
   "showFps": true,
-  "targetFps": 60
+  "targetFps": 30
 }

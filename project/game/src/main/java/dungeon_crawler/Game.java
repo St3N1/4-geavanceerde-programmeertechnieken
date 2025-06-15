@@ -2,79 +2,111 @@ package dungeon_crawler;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
-import dungeon_crawler.Input.Inputs;
-import dungeon_crawler.components.MovementComponent;
+import dungeon_crawler.components.HealthComponent;
 import dungeon_crawler.components.PositionComponent;
 import dungeon_crawler.config.Config;
 import dungeon_crawler.entities.Entity;
-import dungeon_crawler.entities.factory.EnemyEntityFactory;
+import dungeon_crawler.entities.factory.EntityAttackFactory;
+import dungeon_crawler.entities.factory.EntityEnemyFactory;
 import dungeon_crawler.entities.factory.EntityFactoryProvider;
-import dungeon_crawler.entities.factory.ItemEntityFactory;
-import dungeon_crawler.entities.factory.PlayerEntityFactory;
-import dungeon_crawler.entities.factory.ProjectileEntityFactory;
-import dungeon_crawler.entities.objects.map.Floor;
-import dungeon_crawler.entities.objects.map.Gate;
-import dungeon_crawler.entities.objects.map.Wall;
+import dungeon_crawler.entities.factory.EntityObjectFactory;
+import dungeon_crawler.entities.factory.EntityPlayerFactory;
 import dungeon_crawler.entities.players.PlayerEntity;
 import dungeon_crawler.enums.EntityFactoryType;
-import dungeon_crawler.enums.EntityType;
+import dungeon_crawler.enums.EntityPlayerType;
+import dungeon_crawler.systems.AnimationSystem;
 import dungeon_crawler.systems.CollisionSystem;
+import dungeon_crawler.systems.EnemyEntitySystem;
+import dungeon_crawler.systems.EntitySystem;
 import dungeon_crawler.systems.MovementSystem;
 import dungeon_crawler.systems.ProjectileSystem;
 import dungeon_crawler.systems.RenderSystem;
 
 public class Game {
-    private static Game instance;
+    // Config
     private final Config config;
+    private final int SCREEN_HEIGHT;
+    private final int SCREEN_WIDTH;
+    private final boolean SHOW_FPS;
+    private final int TARGET_FPS;
+    private final long FRAME_TIME;
+
+    // Game
+    private static Game instance;
     private GraphicsContext graphicsContext;
-    private PlayerEntityFactory playerEntityFactory;
-    private EnemyEntityFactory enemyEntityFactory;
-    private ProjectileEntityFactory projectileEntityFactory;
-    private ItemEntityFactory itemEntityFactory;
+
+    // Factories
+    private EntityPlayerFactory entityPlayerFactory;
+    private EntityEnemyFactory entityEnemyFactory;
+    private EntityAttackFactory entityAttackFactory;
+    private EntityObjectFactory entityObjectFactory;
+
+    // Systems
     private MovementSystem movementSystem;
     private CollisionSystem collisionSystem;
     private ProjectileSystem projectileSystem;
     private RenderSystem renderSystem;
+    private AnimationSystem animationSystem;
+    private EnemyEntitySystem enemyEntitySystem;
+    private EntitySystem entitySystem;
+
+    // Stopwatch
     private Stopwatch stopwatch;
+
+    // Input
     private Input input;
+
+    // Entities
     private List<Entity> entities;
+    private List<Entity> newEntities;
+
+    // Map
     private Map map;
+    private String startMap = "/maps/map1.json";
     private final int MAP_OFFSET = 40;
-    private int score = 0;
+
+    private boolean running = true;
 
     private Game() {
-        // Graphics
-        this.graphicsContext = new GraphicsContext();
-
         // Config
-        this.config = Config.loadConfig();
+        config = Config.loadConfig();
+        SCREEN_HEIGHT = config.screenHeight;
+        SCREEN_WIDTH = config.screenWidth;
+        SHOW_FPS = config.showFps;
+        TARGET_FPS = config.targetFps;
+        FRAME_TIME = 1000 / TARGET_FPS;
+
+        // Graphics
+        graphicsContext = new GraphicsContext();
 
         // Factories
-        this.playerEntityFactory = (PlayerEntityFactory) EntityFactoryProvider.getFactory(EntityFactoryType.PLAYER);
-        this.enemyEntityFactory = (EnemyEntityFactory) EntityFactoryProvider.getFactory(EntityFactoryType.ENEMY);
-        this.projectileEntityFactory = (ProjectileEntityFactory) EntityFactoryProvider
-                .getFactory(EntityFactoryType.PROJECTILE);
-        this.itemEntityFactory = (ItemEntityFactory) EntityFactoryProvider.getFactory(EntityFactoryType.ITEM);
+        entityPlayerFactory = (EntityPlayerFactory) EntityFactoryProvider.getFactory(EntityFactoryType.PLAYER);
+        entityEnemyFactory = (EntityEnemyFactory) EntityFactoryProvider.getFactory(EntityFactoryType.ENEMY);
+        entityAttackFactory = (EntityAttackFactory) EntityFactoryProvider.getFactory(EntityFactoryType.ATTACK);
+        entityObjectFactory = (EntityObjectFactory) EntityFactoryProvider.getFactory(EntityFactoryType.OBJECT);
 
         // Systems
-        this.movementSystem = new MovementSystem();
-        this.collisionSystem = new CollisionSystem();
-        this.projectileSystem = new ProjectileSystem(projectileEntityFactory);
-        this.renderSystem = new RenderSystem(graphicsContext);
+        movementSystem = new MovementSystem();
+        collisionSystem = new CollisionSystem();
+        projectileSystem = new ProjectileSystem();
+        renderSystem = new RenderSystem(graphicsContext);
+        animationSystem = new AnimationSystem();
+        enemyEntitySystem = new EnemyEntitySystem();
+        entitySystem = new EntitySystem();
 
         // Stopwatch
-        this.stopwatch = new Stopwatch();
+        stopwatch = new Stopwatch();
 
         // Input
-        this.input = new Input(graphicsContext);
+        input = new Input(graphicsContext);
 
         // Entities
-        this.entities = new ArrayList<>();
+        entities = new ArrayList<>();
+        newEntities = new ArrayList<>();
 
         // Map
-        this.map = new Map();
+        map = new Map(MAP_OFFSET, entityObjectFactory, entityEnemyFactory);
     }
 
     public static Game getInstance() {
@@ -88,120 +120,77 @@ public class Game {
         return instance;
     }
 
-    private void addEntity(Entity entity) {
+    public void setRunning(boolean state) {
+        running = state;
+    }
+
+    public Map getMap() {
+        return map;
+    }
+
+    public void newEntity(Entity entity) {
+        newEntities.add(entity);
+    }
+
+    public void clearNewEntitiesList() {
+        newEntities.clear();
+    }
+
+    public List<Entity> getNewEntitiesList() {
+        return newEntities;
+    }
+
+    public void addEntity(Entity entity) {
         entities.add(entity);
     }
 
-    public PlayerEntity getPlayer() {
-        for (Entity entity : entities) {
-            if (entity instanceof PlayerEntity) {
-                return (PlayerEntity) entity;
-            }
-        }
-        return null;
+    public void removeEntity(Entity entity) {
+        entities.remove(entity);
     }
 
-    private void initPlayer(EntityType playerEntity, int[] playerStartPos) {
-        PlayerEntity player = (PlayerEntity) playerEntityFactory.getEntity(playerEntity);
+    public EntityAttackFactory getEntityAttackFactory() {
+        return entityAttackFactory;
+    }
+
+    public PlayerEntity initPlayer(EntityPlayerType playerEntity, int[] playerStartPos) {
+        PlayerEntity player = (PlayerEntity) entityPlayerFactory.createEntity(playerEntity);
         player.getComponent(PositionComponent.class).get().setX(playerStartPos[0]);
         player.getComponent(PositionComponent.class).get().setY(playerStartPos[1]);
-        addEntity(player);
-    }
-
-    private int[] initMap() {
-        final int WALL_WIDTH = Wall.getWidth();
-        final int WALL_HEIGTH = Wall.getHeigth();
-        final int WALL_SCALE = Wall.getScale();
-
-        final int FLOOR_WIDTH = Floor.getWidth();
-        final int FLOOR_HEIGTH = Floor.getHeigth();
-        final int FLOOR_SCALE = Floor.getScale();
-
-        map.loadFromJson("/maps/map1.json");
-        // map.printGrid();
-
-        int[][] grid = map.getGrid();
-        int playerStartX = MAP_OFFSET + grid.length * WALL_WIDTH;
-        int playerStartY = MAP_OFFSET + grid[0].length * WALL_HEIGTH;
-
-        for (int y = 0; y < grid.length; y++) {
-            for (int x = 0; x < grid[y].length; x++) {
-                Object object = null;
-                switch (grid[y][x]) {
-                    case 0 -> object = new Floor(MAP_OFFSET + x * FLOOR_WIDTH * FLOOR_SCALE,
-                            MAP_OFFSET + y * FLOOR_HEIGTH * FLOOR_SCALE);
-                    case 1 -> object = new Wall(MAP_OFFSET + x * WALL_WIDTH * WALL_SCALE,
-                            MAP_OFFSET + y * WALL_HEIGTH * WALL_SCALE);
-                    case 2 -> object = new Gate();
-                }
-
-                if (object != null)
-                    addEntity((Entity) object);
-            }
-        }
-        return new int[] { playerStartX, playerStartY };
-    }
-
-    private void setMovement(Entity entity, int x, int y) {
-        entity.getComponent(MovementComponent.class).ifPresent(movement -> {
-            movement.setDirection(x, y);
-        });
-    }
-
-    private void processPlayerInputs(PlayerEntity player) {
-        Set<Inputs> inputs = input.getActiveInputs();
-
-        boolean left = inputs.contains(Inputs.LEFT);
-        boolean right = inputs.contains(Inputs.RIGHT);
-        boolean up = inputs.contains(Inputs.UP);
-        boolean down = inputs.contains(Inputs.DOWN);
-        boolean attack = inputs.contains(Inputs.SPACE);
-
-        final int x = left && !right ? -1 : right && !left ? 1 : 0;
-        final int y = up && !down ? -1 : down && !up ? 1 : 0;
-
-        setMovement(player, x, y);
-
-        if (attack)
-            player.attack();
+        newEntity(player);
+        return player;
     }
 
     public void run() {
-        final int SCREEN_HEIGHT = config.screenHeight;
-        final int SCREEN_WIDTH = config.screenWidth;
-        final boolean SHOW_FPS = config.showFps;
-        final int TARGET_FPS = config.targetFps;
-        final long FRAME_TIME = 1000 / TARGET_FPS;
-
         graphicsContext.setGameDimensions(SCREEN_HEIGHT, SCREEN_WIDTH);
-        int[] playerStartPos = initMap();
-        initPlayer(EntityType.ROGUE, playerStartPos);
+        map.loadMap(startMap);
+        int[] playerStartPos = map.getPlayerStartPos();
+        PlayerEntity player = initPlayer(EntityPlayerType.ROGUE, playerStartPos);
 
-        addEntity(enemyEntityFactory.getEntity(EntityType.SKELETON));
+        stopwatch.start();
+        while (running) {
+            long start = stopwatch.getElapsedTime();
 
-        long frameTimeEnd = FRAME_TIME;
-        while (true) {
-            stopwatch.start();
+            movementSystem.processPlayerInputs(player, input);
+            entitySystem.update(entities);
+            projectileSystem.update(entities, FRAME_TIME);
+            movementSystem.update(player, entities, FRAME_TIME);
+            enemyEntitySystem.update(player, entities, entityEnemyFactory, FRAME_TIME);
+            collisionSystem.update(player, entities);
+            animationSystem.update(entities, stopwatch);
+            renderSystem.render(entities, SHOW_FPS, FRAME_TIME);
 
-            processPlayerInputs(getPlayer());
-            movementSystem.update(entities, frameTimeEnd);
-            collisionSystem.update(getPlayer(), entities);
-            projectileSystem.update(entities, frameTimeEnd);
-            renderSystem.render(entities, SHOW_FPS, frameTimeEnd, score);
+            if (player.getComponent(HealthComponent.class).get().getHealth() <= 0)
+                running = false;
 
-            long frameTime = stopwatch.getElapsedTime();
-            long sleepTime = FRAME_TIME - frameTime;
-            if (sleepTime <= 0)
-                sleepTime = FRAME_TIME;
-
-            try {
-                Thread.sleep(sleepTime);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            long elapsed = stopwatch.getElapsedTime() - start;
+            long sleepTime = FRAME_TIME - elapsed;
+            if (sleepTime > 0) {
+                try {
+                    Thread.sleep(sleepTime);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
-
-            frameTimeEnd = stopwatch.getElapsedTime();
-            stopwatch.stop();
         }
     }
 }

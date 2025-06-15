@@ -55,6 +55,14 @@ public class PositionComponent extends Component {
         return overlapsX(other) && overlapsY(other);
     }
 
+    public double getCurrentX() {
+        return this.prevX;
+    }
+
+    public double getCurrentY() {
+        return this.prevY;
+    }
+
     public void restorePreviousX() {
         this.x = this.prevX;
     }

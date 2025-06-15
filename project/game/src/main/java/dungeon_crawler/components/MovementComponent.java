@@ -3,7 +3,8 @@ package dungeon_crawler.components;
 public class MovementComponent extends Component {
 	private int x;
 	private int y;
-	private boolean facingLeft = false;
+	private int lastX = 1;
+	private int lastY = 1;
 
 	public MovementComponent() {
 		this.x = 0;
@@ -18,17 +19,21 @@ public class MovementComponent extends Component {
 		return y;
 	}
 
+	public int getLastX() {
+		return lastX;
+	}
+
+	public int getLastY() {
+		return lastY;
+	}
+
 	public void setDirection(int x, int y) {
 		this.x = x;
 		this.y = y;
 
-		if (x < 0)
-			facingLeft = true;
-		else if (x > 0)
-			facingLeft = false;
-	}
-
-	public boolean isFacingLeft() {
-		return facingLeft;
+		if (x != 0 || y != 0) {
+			lastX = x;
+			lastY = y;
+		}
 	}
 }

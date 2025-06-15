@@ -10,20 +10,45 @@ import javax.imageio.ImageIO;
 
 public class RenderComponent extends Component {
     private static final Map<String, BufferedImage> spriteCache = new HashMap<>();
-    private final String sprite;
+    private String sprite;
     private int x;
     private int y;
     private int w;
     private int h;
-    private int scale;
+    private double scale;
 
-    public RenderComponent(String sprite, int x, int y, int w, int h, int scale) {
+    public RenderComponent(String sprite, int x, int y, int w, int h, double scale) {
         this.sprite = sprite;
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
         this.scale = scale;
+    }
+
+    public void setSprite(String spritePath) {
+        spriteCache.remove(sprite);
+        this.sprite = spritePath;
+    }
+
+    public void setSpriteX(int x) {
+        spriteCache.remove(sprite);
+        this.x = x;
+    }
+
+    public void setSpriteY(int y) {
+        spriteCache.remove(sprite);
+        this.y = y;
+    }
+
+    public void setSpriteW(int w) {
+        spriteCache.remove(sprite);
+        this.w = w;
+    }
+
+    public void setSpriteH(int h) {
+        spriteCache.remove(sprite);
+        this.h = h;
     }
 
     public BufferedImage resizeImage(BufferedImage originalImage, int targetWidth, int targetHeight) {
@@ -53,8 +78,9 @@ public class RenderComponent extends Component {
             System.err.println("Could not load image");
             return null;
         }
+
         BufferedImage subImage = image.getSubimage(x, y, w, h);
-        return resizeImage(subImage, w * scale, h * scale);
+        return resizeImage(subImage, (int) ((double) w * scale), (int) ((double) h * scale));
     }
 
     public double getWidth() {

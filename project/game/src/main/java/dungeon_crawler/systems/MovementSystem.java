@@ -1,32 +1,46 @@
 package dungeon_crawler.systems;
 
 import java.util.List;
+import java.util.Set;
 
+import dungeon_crawler.Input;
+import dungeon_crawler.Input.Inputs;
 import dungeon_crawler.components.MovementComponent;
 import dungeon_crawler.components.PositionComponent;
 import dungeon_crawler.components.VelocityComponent;
 import dungeon_crawler.entities.Entity;
-import dungeon_crawler.entities.enemies.EnemyEntity;
 import dungeon_crawler.entities.players.PlayerEntity;
 
 public class MovementSystem {
-    public MovementSystem() {
+    public void update(PlayerEntity player, List<Entity> entities, long deltaTime) {
+        double stepTime = deltaTime / 1000.0;
 
+        player.getComponent(MovementComponent.class).ifPresent(mov -> {
+            player.getComponent(PositionComponent.class).ifPresent(pos -> {
+                player.getComponent(VelocityComponent.class).ifPresent(vel -> {
+                    pos.setX(pos.getX() + vel.getDx() * mov.getX() * stepTime);
+                    pos.setY(pos.getY() + vel.getDy() * mov.getY() * stepTime);
+                });
+            });
+        });
     }
 
-    public void update(List<Entity> entities, long deltaTime) {
-        double seconds = deltaTime / 1000.0;
-        for (Entity entity : entities) {
-            if (entity instanceof PlayerEntity || entity instanceof EnemyEntity) {
-                entity.getComponent(MovementComponent.class).ifPresent(movement -> {
-                    entity.getComponent(PositionComponent.class).ifPresent(position -> {
-                        entity.getComponent(VelocityComponent.class).ifPresent(velocity -> {
-                            position.setX(position.getX() + velocity.getDx() * movement.getX() * seconds);
-                            position.setY(position.getY() + velocity.getDy() * movement.getY() * seconds);
-                        });
-                    });
-                });
-            }
-        }
+    public void processPlayerInputs(PlayerEntity player, Input input) {
+        Set<Inputs> inputs = input.getActiveInputs();
+
+        boolean left = inputs.contains(Inputs.LEFT);
+        boolean right = inputs.contains(Inputs.RIGHT);
+        boolean up = inputs.contains(Inputs.UP);
+        boolean down = inputs.contains(Inputs.DOWN);
+        boolean attack = inputs.contains(Inputs.SPACE);
+
+        final int x = left && !right ? -1 : right && !left ? 1 : 0;
+        final int y = up && !down ? -1 : down && !up ? 1 : 0;
+
+        MovementComponent movement = player.getComponent(MovementComponent.class).get();
+        movement.setDirection(x, y);
+
+        if (attack)
+            player.attack();
     }
 }

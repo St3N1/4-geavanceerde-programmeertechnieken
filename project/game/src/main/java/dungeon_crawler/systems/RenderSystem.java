@@ -5,7 +5,9 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RadialGradientPaint;
 import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.util.Iterator;
 import java.util.List;
 
 import dungeon_crawler.GraphicsContext;
@@ -14,11 +16,14 @@ import dungeon_crawler.components.MovementComponent;
 import dungeon_crawler.components.PositionComponent;
 import dungeon_crawler.components.RenderComponent;
 import dungeon_crawler.entities.Entity;
+import dungeon_crawler.entities.enemies.EnemyEntity;
+import dungeon_crawler.entities.objects.map.Chest;
 import dungeon_crawler.entities.players.PlayerEntity;
 
 public class RenderSystem {
     private GraphicsContext graphicsContext;
     private Graphics2D graphics2d;
+    private final int radius = 150;
 
     public RenderSystem(GraphicsContext graphicsContext) {
         this.graphicsContext = graphicsContext;
@@ -40,9 +45,12 @@ public class RenderSystem {
         graphics2d.drawString("HEALTH: " + (int) health, 210, 20);
     }
 
-    private void drawDarknessOverlay(PlayerEntity player) {
-        final int radius = 150;
+    private void showHasKey(boolean hasKey) {
+        graphics2d.setColor(Color.ORANGE);
+        graphics2d.drawString("KEY: " + hasKey, 310, 20);
+    }
 
+    private void drawDarknessOverlay(PlayerEntity player) {
         PositionComponent pos = player.getComponent(PositionComponent.class).orElse(null);
         if (pos == null)
             return;
@@ -71,48 +79,78 @@ public class RenderSystem {
         graphics2d.drawImage(overlay, 0, 0, null);
     }
 
-    public void render(List<Entity> entities, boolean showFps, double deltaTime, int score) {
+    private void renderEntity(Entity entity) {
+        if (entity.hasComponent(RenderComponent.class) && entity.hasComponent(PositionComponent.class)) {
+            RenderComponent renderComponent = entity.getComponent(RenderComponent.class).get();
+            PositionComponent positionComponent = entity.getComponent(PositionComponent.class).get();
+
+            BufferedImage spriteImage = renderComponent.getSprite();
+            int x = (int) positionComponent.getX();
+            int y = (int) positionComponent.getY();
+
+            int dx = 0;
+            if (entity.hasComponent(MovementComponent.class)) {
+                MovementComponent mov = entity.getComponent(MovementComponent.class).get();
+                dx = mov.getX();
+            }
+
+            if (dx == -1) {
+                AffineTransform tx = AffineTransform.getScaleInstance(-1, 1);
+                tx.translate(-spriteImage.getWidth(null), 0);
+                AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+                spriteImage = op.filter(spriteImage, null);
+            }
+
+            graphics2d.drawImage(spriteImage, x, y, null);
+
+            // Color red on hit
+            if (entity instanceof EnemyEntity || entity instanceof PlayerEntity) {
+                if (entity.isHit()) {
+                    for (int i = 0; i < spriteImage.getWidth(); i++) {
+                        for (int j = 0; j < spriteImage.getHeight(); j++) {
+                            int alpha = (spriteImage.getRGB(i, j) >> 24) & 0xff;
+                            if (alpha != 0) {
+                                graphics2d.setColor(new Color(255, 0, 0, 100));
+                                graphics2d.fillRect(x + i, y + j, 1, 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void render(List<Entity> entities, boolean showFps, double deltaTime) {
         graphics2d = graphicsContext.getG2d();
         graphics2d.setColor(Color.BLACK);
         graphics2d.fillRect(0, 0, graphicsContext.getFrame().getWidth(), graphicsContext.getFrame().getHeight());
 
-        int playerHealth = 0;
         PlayerEntity player = null;
-
-        for (Entity entity : entities) {
-            if (entity.hasComponent(RenderComponent.class) && entity.hasComponent(PositionComponent.class)) {
-                RenderComponent renderComponent = entity.getComponent(RenderComponent.class).get();
-                PositionComponent positionComponent = entity.getComponent(PositionComponent.class).get();
-
-                BufferedImage spriteImage = renderComponent.getSprite();
-                int x = (int) positionComponent.getX();
-                int y = (int) positionComponent.getY();
-
-                boolean flip = entity.getComponent(MovementComponent.class)
-                        .map(MovementComponent::isFacingLeft)
-                        .orElse(false);
-
-                if (entity instanceof PlayerEntity) {
-                    player = (PlayerEntity) entity;
-                    playerHealth = entity.getComponent(HealthComponent.class).get().getHealth();
-                }
-
-                if (flip) {
-                    AffineTransform tx = AffineTransform.getScaleInstance(-1, 1);
-                    AffineTransform old = graphics2d.getTransform();
-                    graphics2d.translate(x + spriteImage.getWidth(), y);
-                    graphics2d.drawImage(spriteImage, tx, null);
-                    graphics2d.setTransform(old);
-                } else {
-                    graphics2d.drawImage(spriteImage, x, y, null);
-                }
-            }
+        Chest chest = null;
+        Iterator<Entity> iterator = entities.iterator();
+        while (iterator.hasNext()) {
+            Entity entity = iterator.next();
+            if (entity instanceof PlayerEntity) {
+                player = (PlayerEntity) entity;
+                continue;
+            } else if (entity instanceof Chest) {
+                chest = (Chest) entity;
+                continue;
+            } else
+                renderEntity(entity);
         }
+
+        if (chest != null)
+            renderEntity(chest);
+
         if (player != null) {
+            renderEntity(player);
             drawDarknessOverlay(player);
+            showHealth(player.getComponent(HealthComponent.class).get().getHealth());
+            showScore(player.getScore());
+            showHasKey(player.getKey());
         }
-        showHealth(playerHealth);
-        showScore(score);
+
         if (showFps)
             showFps(deltaTime);
 

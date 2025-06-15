@@ -9,10 +9,14 @@ import dungeon_crawler.components.RenderComponent;
 import dungeon_crawler.components.VelocityComponent;
 
 public class Rogue extends PlayerEntity {
-    private int health = 8;
-    private int attackSpeed = 5;
-    private int damage = 4;
+    // stats
+    private int health = 16;
+    private int damage = 2;
     private int velocity = 85;
+    private int attackSpeed = 500;
+    private int slashColor = 5;
+
+    // sprite
     private String sprite = "/sprites/entities/rogue.png";
     private int spriteX = 0;
     private int spriteY = 2688;
@@ -21,6 +25,7 @@ public class Rogue extends PlayerEntity {
     private int scale = 2;
 
     public Rogue() {
+        this._slashColor = slashColor;
         this.addComponent(new RenderComponent(sprite, spriteX, spriteY, spriteW, spriteH, scale));
         this.addComponent(new HealthComponent(health));
         this.addComponent(new AttackComponent(damage, attackSpeed));
@@ -29,5 +34,4 @@ public class Rogue extends PlayerEntity {
         this.addComponent(new MovementComponent());
         this.addComponent(new CollidableComponent());
     }
-
 }
